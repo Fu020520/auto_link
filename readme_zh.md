@@ -52,6 +52,30 @@ copy settings.env.example settings.env
 python link.py
 ```
 
+## 使用打包版（Windows 可执行程序）
+
+仓库中提供了已打包好的可执行文件：`dist/auto_link.exe`。
+
+1. 准备配置文件
+
+把 `settings.env.example` 复制到 `dist` 目录并重命名为 `settings.env`，再按你的认证页修改账号、密码、选择器等：
+
+```bash
+copy settings.env.example dist\settings.env
+```
+
+2. 配置浏览器路径（建议必须设置）
+
+打包版默认不会自带 Playwright 的 Chromium 运行时，因此建议在 `dist/settings.env` 里设置 `BROWER_PATH` 指向本机 Chrome/Chromium 的可执行文件路径。
+
+3. 运行
+
+```bash
+dist\auto_link.exe
+```
+
+日志会输出到控制台并写入 `dist\app.log`（与可执行文件同目录）。
+
 ## 配置说明（settings.env）
 
 配置文件位于项目根目录：`settings.env`。脚本通过 `python-dotenv` 加载后再解析。

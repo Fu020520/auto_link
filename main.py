@@ -6,7 +6,8 @@ def main(argv: list[str] | None = None) -> int:
     if "--cli" in argv or "--nogui" in argv:
         import link
 
-        return int(link.main())
+        link.Link().run()
+        return 0
 
     import gui
 

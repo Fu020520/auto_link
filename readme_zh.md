@@ -2,7 +2,7 @@
 
 OpenClaw 龙虾机器人部署在实验室、机房、校园网等环境时，常见问题是网络会被周期性断开或需要重新认证登录。本项目通过“定时检测 + 断网自动打开认证页并登录”的方式，让设备在断网后能自动恢复联网，减少人工干预。
 
-入口文件：`link.py`（循环执行）
+推荐入口：`main.py`
 
 ## 功能概览
 
@@ -46,15 +46,33 @@ python -m playwright install chromium
 copy settings.env.example settings.env
 ```
 
-4. 运行
+4. 运行（推荐）
 
 ```bash
+python main.py
+```
+
+如需不启动 GUI，直接运行循环脚本：
+
+```bash
+python main.py --cli
+```
+
+也可以分别运行：
+
+```bash
+python gui.py
 python link.py
 ```
 
+## GUI 说明
+
+- GUI 页面输入时不需要双引号，保存时会自动写入 `settings.env` 所需的格式。
+- 右侧输出会跟随本次运行写入到 `app.log` 的新增内容。
+
 ## 使用打包版（Windows 可执行程序）
 
-仓库中提供了已打包好的可执行文件：`dist/auto_link.exe`。
+如果你已自行打包生成可执行文件（例如 `dist/auto_link.exe`），可按下面方式使用：
 
 1. 准备配置文件
 
@@ -76,6 +94,16 @@ dist\auto_link.exe
 
 日志会输出到控制台并写入 `dist\app.log`（与可执行文件同目录）。
 
+## 自己打包（PyInstaller）
+
+建议使用 `main.py` 作为统一入口进行打包：
+
+```bash
+pyinstaller -F -w -i linkURL.ico --name 自动联网 main.py
+```
+
+打包后把 `settings.env.example` 复制到 exe 同目录并改名为 `settings.env` 再运行。
+
 ## 配置说明（settings.env）
 
 配置文件位于项目根目录：`settings.env`。脚本通过 `python-dotenv` 加载后再解析。
@@ -86,6 +114,8 @@ dist\auto_link.exe
 - `LOGIN_URL`
   - 用途：登录页地址（Playwright 会 `goto` 这个地址）。
   - 建议：写完整协议，例如 `http://192.168.254.25/` 或 `https://...`，仅写 IP 可能无法正常打开。
+- `LOGIN_SUCCESS_URL`
+  - 用途：用于判断是否登录成功的目标地址（`wait_for_url`）。
 - `NUMBER`
   - 用途：账号/工号/手机号等“用户名”字段的值。
 - `PASSWORD`

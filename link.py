@@ -56,6 +56,7 @@ class Link:
             os.getenv("TIME_QUANTUMS"),
             [{"start": "00:00", "end": "23:59", "allow": 1}],
         )
+        self.login_success_url = os.getenv("LOGIN_SUCCESS_URL")
 
         freq_raw = os.getenv("FREQUENCY")
         try:
@@ -64,16 +65,16 @@ class Link:
             self.frequency = 10 * 60
 
         self.login_message = parse_literal(os.getenv("LOGIN_MESSAGE"), {})
-        self.browser_path = os.getenv("BROWER_PATH") or None
+        self.browser_path = os.getenv("BROWER_PATH") or "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
 
     def ping_url(self):
         """
         测试网络连通性
         :return: 是否连通
         """
+        # 随机选择一个URL进行测试
+        link_url = random.choice(self.urls)
         try:
-            # 随机选择一个URL进行测试
-            link_url = random.choice(self.urls)
             response = requests.get(link_url, timeout=10)
             logging.info(f"测试连通性{link_url} 状态码: {response.status_code}")
             return response.status_code == 200
@@ -110,18 +111,40 @@ class Link:
         """
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True, executable_path=self.browser_path)
+                browser = p.chromium.launch(headless=True,
+                                            executable_path=self.browser_path,
+                                            slow_mo=500,  # 新增：操作延迟
+                                            args=["--disable-blink-features=AutomationControlled"]  # 新增：禁用自动化检测
+                                            )
                 page = browser.new_page()
                 page.goto(self.login_url)
                 page.wait_for_load_state("networkidle")
-                page.fill(self.login_message["number_input"], self.number)
+                # 账号输入框
+                num_input = page.locator(self.login_message["number_input"])
+                num_input.fill(self.number)
                 time.sleep(1)
-                page.fill(self.login_message["password_input"], self.password)
+                # 密码输入框
+                pswd_input = page.locator(self.login_message["password_input"])
+                pswd_input.fill(self.password)
                 time.sleep(1)
-                page.click(self.login_message["login_button"])
-                page.wait_for_load_state("networkidle")
-                # 关闭浏览器
-                browser.close()
+                # 登录按钮
+                login_btn = page.locator(self.login_message["login_button"])
+                login_btn.click(timeout=15000,force=True)
+                # 查看是否登录成功
+                try:
+                    page.wait_for_url(self.login_success_url,timeout=15000)
+                    logging.info("成功跳转")
+                    # 检测连通性
+                    if self.ping_url():
+                        return True
+                    else:
+                        return False
+                except Exception as e:
+                    logging.error(f"登录失败: {e}")
+                    return False
+                finally:
+                    # 关闭浏览器
+                    browser.close()
         except Exception as e:
             logging.error(f"登录失败: {e}")
             return False
@@ -137,14 +160,20 @@ class Link:
                 # 网络联通检测
                 if self.ping_url():
                     logging.info("网络已连通")
+                    # 时间暂停
+                    time.sleep(self.frequency)
                 else:
                     logging.info("网络未连通，尝试登录")
-                    self.login()
+                    login_if = self.login()
+                    if login_if:
+                        logging.info("登录成功")
+                    else:
+                        logging.error("登录失败")
             else:
                 logging.info("当前时间不在时间段内，等待下一个时间段")
-                continue
-            # 时间暂停
-            time.sleep(self.frequency)
+                # 休眠处理
+                time.sleep(int(self.frequency / 2))
+
 
 if __name__ == "__main__":
     link = Link()

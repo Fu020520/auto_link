@@ -121,7 +121,7 @@ def _set_windows_app_id(app_id: str) -> None:
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("自动联网")
+        self.setWindowTitle("自连")
         self.resize(920, 680)
 
         self._base_dir = _app_base_dir()
@@ -239,10 +239,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.env_path_edit.setText(str(self._base_dir / "settings.env"))
 
     def _selected_run_target(self) -> tuple[str, list[str], str]:
+        if getattr(sys, "frozen", False):
+            exe = Path(sys.executable).resolve()
+            return str(exe), ["--cli"], str(exe.parent)
+
         env_path = self._env_path()
-        exe_path = env_path.parent / "auto_link.exe"
-        if exe_path.exists() and exe_path.suffix.lower() == ".exe":
-            return str(exe_path), [], str(exe_path.parent)
+        for candidate in ("auto_link.exe", "自动联网.exe", "自连.exe"):
+            exe_path = env_path.parent / candidate
+            if exe_path.exists() and exe_path.suffix.lower() == ".exe":
+                return str(exe_path), [], str(exe_path.parent)
         return sys.executable, [str(self._base_dir / "link.py")], str(self._base_dir)
 
     def _env_path(self) -> Path:
@@ -459,11 +464,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
 def main() -> int:
     os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "1")
-    _set_windows_app_id("auto_link.自动联网")
+    _set_windows_app_id("auto_link.zilian")
     app = QtWidgets.QApplication(sys.argv)
     app.setStyle("Fusion")
-    app.setApplicationName("自动联网")
-    app.setApplicationDisplayName("自动联网")
+    app.setApplicationName("自连")
+    app.setApplicationDisplayName("自连")
     icon_path = _app_base_dir() / "linkURL.ico"
     if icon_path.exists():
         app.setWindowIcon(QtGui.QIcon(str(icon_path)))
